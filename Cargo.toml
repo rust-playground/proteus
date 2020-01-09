@@ -10,6 +10,7 @@ keywords = [
 license = "MIT OR Apache-2.0"
 name = "proteus"
 readme = "README.md"
+repository = "https://github.com/rust-playground/proteus"
 version = "0.1.0"
 
 [badges.travis-ci]
