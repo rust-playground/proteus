@@ -154,6 +154,7 @@ pub use transformer::TransformBuilder;
 pub use errors::Error;
 
 /// This macros is shorthand for creating a set of actions to be added to [TransformBuilder](struct.TransformBuilder.html).
+/// this only works with the built in set of actions.
 #[macro_export]
 macro_rules! actions {
     ($($p:expr),*) => {
@@ -162,7 +163,7 @@ macro_rules! actions {
             $(
                 parsables.push(proteus::Parsable::new($p.0, $p.1));
             )*
-            proteus::Parser::parse_multi(&parsables)
+            proteus::Parser::default().parse_multi(&parsables)
         }
     };
 }

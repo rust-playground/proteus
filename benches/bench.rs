@@ -6,7 +6,9 @@ use proteus::{Parsable, Parser, TransformBuilder};
 use serde_json::Value;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let action = Parser::parse(r#"const("Dean Karn")"#, "full_name").unwrap();
+    let action = Parser::default()
+        .parse(r#"const("Dean Karn")"#, "full_name")
+        .unwrap();
     let trans = TransformBuilder::default()
         .add_action(action)
         .build()
@@ -28,7 +30,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let action = Parser::parse("top", "new").unwrap();
+    let action = Parser::default().parse("top", "new").unwrap();
     let trans = TransformBuilder::default()
         .add_action(action)
         .build()
@@ -50,19 +52,20 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let actions = Parser::parse_multi(&[
-        Parsable::new("top1", "new1"),
-        Parsable::new("top2", "new2"),
-        Parsable::new("top3", "new3"),
-        Parsable::new("top4", "new4"),
-        Parsable::new("top5", "new5"),
-        Parsable::new("top6", "new6"),
-        Parsable::new("top7", "new7"),
-        Parsable::new("top8", "new8"),
-        Parsable::new("top9", "new9"),
-        Parsable::new("top10", "new10"),
-    ])
-    .unwrap();
+    let actions = Parser::default()
+        .parse_multi(&[
+            Parsable::new("top1", "new1"),
+            Parsable::new("top2", "new2"),
+            Parsable::new("top3", "new3"),
+            Parsable::new("top4", "new4"),
+            Parsable::new("top5", "new5"),
+            Parsable::new("top6", "new6"),
+            Parsable::new("top7", "new7"),
+            Parsable::new("top8", "new8"),
+            Parsable::new("top9", "new9"),
+            Parsable::new("top10", "new10"),
+        ])
+        .unwrap();
 
     let trans = TransformBuilder::default()
         .add_actions(actions)
@@ -94,11 +97,12 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let action = Parser::parse(
-        r#"join(" ", const("Mr."), first_name, meta.middle_name, last_name)"#,
-        "full_name",
-    )
-    .unwrap();
+    let action = Parser::default()
+        .parse(
+            r#"join(" ", const("Mr."), first_name, meta.middle_name, last_name)"#,
+            "full_name",
+        )
+        .unwrap();
     let trans = TransformBuilder::default()
         .add_action(action)
         .build()

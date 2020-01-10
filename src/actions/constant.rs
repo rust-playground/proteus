@@ -1,5 +1,8 @@
 use crate::action::Action;
 use crate::errors::Error;
+use crate::parser::Error as ParseError;
+use crate::parser::ParsableAction;
+use crate::Parser;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -20,5 +23,21 @@ impl Constant {
 impl Action for Constant {
     fn apply(&self, _source: &Value, _destination: &mut Value) -> Result<Option<Value>, Error> {
         Ok(Some(self.value.clone()))
+    }
+}
+
+#[derive(Debug)]
+pub struct ParsableConst;
+
+impl ParsableAction for ParsableConst {
+    fn parse(&self, _parser: &Parser, value: &str) -> Result<Box<dyn Action>, ParseError> {
+        if value.is_empty() {
+            Err(ParseError::MissingActionValue {
+                key: "const".to_owned(),
+            })
+        } else {
+            let val: Value = serde_json::from_str(value)?;
+            Ok(Box::new(Constant::new(val)))
+        }
     }
 }

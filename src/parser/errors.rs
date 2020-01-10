@@ -36,6 +36,9 @@ pub enum Error {
 
     #[snafu(display("Setter namespace parsing error: {}", err))]
     SetterNamespace { err: SetterNamespaceError },
+
+    #[snafu(display("{}", err))]
+    ParsableActionError { err: String },
 }
 
 impl From<GetterNamespaceError> for Error {
