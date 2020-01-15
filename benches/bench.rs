@@ -2,11 +2,12 @@
 extern crate criterion;
 
 use criterion::{Benchmark, Criterion, Throughput};
-use proteus::{Parsable, Parser, TransformBuilder};
+use proteus::{Parsable, ParserBuilder, TransformBuilder};
 use serde_json::Value;
 
 fn criterion_benchmark(c: &mut Criterion) {
-    let action = Parser::default()
+    let action = ParserBuilder::default()
+        .build()
         .parse(r#"const("Dean Karn")"#, "full_name")
         .unwrap();
     let trans = TransformBuilder::default()
@@ -30,7 +31,10 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let action = Parser::default().parse("top", "new").unwrap();
+    let action = ParserBuilder::default()
+        .build()
+        .parse("top", "new")
+        .unwrap();
     let trans = TransformBuilder::default()
         .add_action(action)
         .build()
@@ -52,7 +56,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let actions = Parser::default()
+    let actions = ParserBuilder::default()
+        .build()
         .parse_multi(&[
             Parsable::new("top1", "new1"),
             Parsable::new("top2", "new2"),
@@ -97,7 +102,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         .throughput(Throughput::Bytes(input.as_bytes().len() as u64)),
     );
 
-    let action = Parser::default()
+    let action = ParserBuilder::default()
+        .build()
         .parse(
             r#"join(" ", const("Mr."), first_name, meta.middle_name, last_name)"#,
             "full_name",

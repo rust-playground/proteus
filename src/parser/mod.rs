@@ -6,4 +6,4 @@ mod parser;
 
 pub use errors::Error;
 pub use parsable_action::ParsableAction;
-pub use parser::{Parsable, Parser, COMMA_SEP_RE, QUOTED_STR_RE};
+pub use parser::{Parsable, Parser, ParserBuilder, COMMA_SEP_RE, QUOTED_STR_RE};

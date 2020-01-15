@@ -39,7 +39,55 @@ impl<'a> Parsable<'a> {
     }
 }
 
-/// This type represents a set of static methods for parsing transformation syntax into
+/// This type represents the parser builder which is used to create a
+/// [Parser](struct.Parser.html).
+///
+/// The builder allows dynamically adding of [Action](action/trait.Action.html)'s to the parser
+/// and it's syntax parsing ability.
+///
+pub struct ParserBuilder {
+    actions: HashMap<String, Box<dyn ParsableAction>>,
+}
+
+impl Default for ParserBuilder {
+    /// creates the new resource with all the default parsable actions initialized.
+    fn default() -> Self {
+        let mut actions: HashMap<String, Box<dyn ParsableAction>> = HashMap::new();
+        actions.insert("const".to_string(), Box::new(ParsableConst));
+        actions.insert("join".to_string(), Box::new(ParsableJoin));
+        Self { actions }
+    }
+}
+
+impl ParserBuilder {
+    /// returns a new ParserBuilder with NO Parsable Actions added, it is recommended to use
+    /// default() to have all of the default Actions registered unless you are trying to
+    /// recreate or restrict what the Parser will be allowed to do.
+    pub fn new() -> Self {
+        ParserBuilder {
+            actions: HashMap::new(),
+        }
+    }
+
+    /// adds a parsable action to the parser so that the parser may know how to create
+    /// [Action](action/trait.Action.html)'s bases on the action name in the syntax.
+    ///
+    /// The default actions can and will be overridden by the ones specified if the name already
+    /// exists.
+    pub fn add_action(mut self, name: &str, action: Box<dyn ParsableAction>) -> Self {
+        self.actions.insert(name.to_string(), action);
+        self
+    }
+
+    /// finalizes the builder and returns the immutable [Parser](struct.Parser.html) for use.
+    pub fn build(self) -> Parser {
+        Parser {
+            actions: self.actions,
+        }
+    }
+}
+
+/// This type represents a set of methods for parsing transformation syntax into
 /// [Action](action/trait.Action.html)'s.
 ///
 /// The parser is responsible for parsing the transformation action specific syntax, take the
@@ -55,21 +103,7 @@ pub struct Parser {
     actions: HashMap<String, Box<dyn ParsableAction>>,
 }
 
-impl Default for Parser {
-    fn default() -> Self {
-        let mut actions: HashMap<String, Box<dyn ParsableAction>> = HashMap::new();
-        actions.insert("const".to_string(), Box::new(ParsableConst));
-        actions.insert("join".to_string(), Box::new(ParsableJoin));
-        Self { actions }
-    }
-}
-
 impl Parser {
-    //    // is a way to create a parser from scratch with no existing actions for parsing
-    //    pub fn new(actions: HashMap<String, Box<dyn Action>>) -> Self {
-    //        Self { actions }
-    //    }
-
     /// parses a single transformation action to be taken with the provided source & destination.
     pub fn parse(&self, source: &str, destination: &str) -> Result<Box<dyn Action>, Error> {
         let set = SetterNamespace::parse(destination)?;
@@ -134,7 +168,7 @@ mod tests {
 
     #[test]
     fn direct_getter() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse("key", "new")?;
+        let action = ParserBuilder::default().build().parse("key", "new")?;
         let expected = Box::new(Setter::new(
             SetterNamespace::parse("new")?,
             Box::new(Getter::new(GetterNamespace::parse("key")?)),
@@ -145,7 +179,9 @@ mod tests {
 
     #[test]
     fn constant() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"const("value")"#, "new")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("value")"#, "new")?;
         let expected = Box::new(Setter::new(
             SetterNamespace::parse("new")?,
             Box::new(Constant::new("value".into())),
@@ -175,15 +211,15 @@ mod tests {
             Parsable::new(r#"const("value")"#, "new"),
             Parsable::new(r#"const("value2")"#, "new2"),
         ];
-        let expected = Parser::default().parse_multi(&parsables)?;
-        let deserialized = Parser::default().parse_multi_from_str("[{\"source\":\"const(\\\"value\\\")\",\"destination\":\"new\"},{\"source\":\"const(\\\"value2\\\")\",\"destination\":\"new2\"}]")?;
+        let expected = ParserBuilder::default().build().parse_multi(&parsables)?;
+        let deserialized = ParserBuilder::default().build().parse_multi_from_str("[{\"source\":\"const(\\\"value\\\")\",\"destination\":\"new\"},{\"source\":\"const(\\\"value2\\\")\",\"destination\":\"new2\"}]")?;
         assert_eq!(format!("{:?}", expected), format!("{:?}", deserialized));
         Ok(())
     }
 
     #[test]
     fn join() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(
+        let action = ParserBuilder::default().build().parse(
             r#"join(",_" , first_name, last_name, const("Dean Karn"))"#,
             "full_name",
         )?;

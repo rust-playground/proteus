@@ -110,12 +110,14 @@ impl Transformer {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Parsable, Parser, TransformBuilder};
+    use crate::{Parsable, ParserBuilder, TransformBuilder};
     use serde_json::{json, Value};
 
     #[test]
     fn constant() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "full_name")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "full_name")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -126,7 +128,9 @@ mod tests {
 
     #[test]
     fn array_of_array_to_array() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2][1]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2][1]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -136,7 +140,9 @@ mod tests {
 
         assert_eq!(expected, destination);
 
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2][1].name")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2][1].name")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -149,7 +155,9 @@ mod tests {
 
     #[test]
     fn push_array() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2][]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2][]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -159,7 +167,9 @@ mod tests {
 
         assert_eq!(expected, destination);
 
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2][]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2][]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let mut destination = json!([null, null, [null]]);
@@ -172,7 +182,9 @@ mod tests {
 
         assert_eq!(expected, destination);
 
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -183,7 +195,9 @@ mod tests {
         assert_eq!(expected, destination);
 
         // testing replace
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[2]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[2]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let mut destination = json!([null, null, {"id":"id"}]);
@@ -195,7 +209,9 @@ mod tests {
 
         assert_eq!(expected, destination);
 
-        let action = Parser::default().parse(r#"const("Dean Karn")"#, "[1].key.key2")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const("Dean Karn")"#, "[1].key.key2")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let destination = trans.apply(&source)?;
@@ -209,7 +225,9 @@ mod tests {
 
     #[test]
     fn append_array_top_level() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"const([null,"Dean Karn"])"#, "[]")?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"const([null,"Dean Karn"])"#, "[]")?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = "".into();
         let mut destination = Value::Array(vec!["test".into()]);
@@ -225,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_top_level() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("existing_key", "rename_from_existing_key"),
             Parsable::new("my_array[0]", "used_to_be_array"),
             Parsable::new(r#"const("consant_value")"#, "const"),
@@ -243,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_10_top_level() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("top1", "new1"),
             Parsable::new("top2", "new2"),
             Parsable::new("top3", "new3"),
@@ -278,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_join() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(
+        let action = ParserBuilder::default().build().parse(
             r#"join(" ", const("Mr."), first_name, meta.middle_name, last_name)"#,
             "full_name",
         )?;
@@ -299,7 +317,9 @@ mod tests {
 
     #[test]
     fn test_explicit_key() -> Result<(), Box<dyn std::error::Error>> {
-        let action = Parser::default().parse(r#"["name(1)"]"#, r#"["my name is ([2][])"]"#)?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"["name(1)"]"#, r#"["my name is ([2][])"]"#)?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = json!({"name(1)":"Dean Karn"});
         let destination = trans.apply(&source)?;
@@ -309,7 +329,9 @@ mod tests {
 
         assert_eq!(expected, destination);
 
-        let action = Parser::default().parse(r#"["name(1)"].name"#, r#"["my name is ([2][])"]"#)?;
+        let action = ParserBuilder::default()
+            .build()
+            .parse(r#"["name(1)"].name"#, r#"["my name is ([2][])"]"#)?;
         let trans = TransformBuilder::default().add_action(action).build()?;
         let source = json!({"name(1)":{"name":"Dean Karn"}});
         let destination = trans.apply(&source)?;
@@ -322,7 +344,7 @@ mod tests {
 
     #[test]
     fn merge_object() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person.full_name"),
             Parsable::new("person.metadata", "person{}"),
         ])?;
@@ -336,7 +358,7 @@ mod tests {
 
     #[test]
     fn combine_array() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[0]"),
             Parsable::new("person.metadata", "person[+]"), // CombineArray = [+], MergeArray = [-]
         ])?;
@@ -346,7 +368,7 @@ mod tests {
         let expected = json!({"person":["Dean Karn", 1]});
         assert_eq!(expected, destination);
 
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "[0]"),
             Parsable::new("person.metadata", "[+]"),
         ])?;
@@ -361,7 +383,7 @@ mod tests {
 
     #[test]
     fn replace_array() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[0]"),
             Parsable::new("person.metadata", "person[0]"),
         ])?;
@@ -375,7 +397,7 @@ mod tests {
 
     #[test]
     fn merge_array() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[0]"),
             Parsable::new("person.metadata", "person[-]"),
         ])?;
@@ -386,7 +408,7 @@ mod tests {
         assert_eq!(expected, destination);
 
         // test source len > existing
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[0]"),
             Parsable::new("person.metadata", "person[-]"),
         ])?;
@@ -397,7 +419,7 @@ mod tests {
         assert_eq!(expected, destination);
 
         // test source len < existing
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[5]"),
             Parsable::new("person.metadata", "person[-]"),
         ])?;
@@ -411,7 +433,7 @@ mod tests {
 
     #[test]
     fn transformer_serialization() -> Result<(), Box<dyn std::error::Error>> {
-        let actions = Parser::default().parse_multi(&[
+        let actions = ParserBuilder::default().build().parse_multi(&[
             Parsable::new("person.name", "person[0]"),
             Parsable::new("person.metadata", "person[0]"),
         ])?;

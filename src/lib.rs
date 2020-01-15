@@ -145,7 +145,7 @@ pub mod parser;
 pub mod transformer;
 
 #[doc(inline)]
-pub use parser::{Parsable, Parser};
+pub use parser::{Parsable, Parser, ParserBuilder};
 
 #[doc(inline)]
 pub use transformer::TransformBuilder;
@@ -163,7 +163,16 @@ macro_rules! actions {
             $(
                 parsables.push(proteus::Parsable::new($p.0, $p.1));
             )*
-            proteus::Parser::default().parse_multi(&parsables)
+            proteus::ParserBuilder::default().build().parse_multi(&parsables)
+        }
+    };
+    (&parser:ident, $($p:expr),*) => {
+        {
+            let mut parsables = Vec::new();
+            $(
+                parsables.push(proteus::Parsable::new($p.0, $p.1));
+            )*
+            &parser.parse_multi(&parsables)
         }
     };
 }
