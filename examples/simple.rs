@@ -30,6 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 r#"join(", ", addresses[0].street, addresses[0].postal, addresses[0].country)"#,
                 "address"
             ),
+            (r#"count(addresses)"#, "address_count"),
             ("nested.inner.key", "prev_nested"),
             ("nested.my_arr", "my_arr"),
             (r#"const("arr_value_2")"#, "my_arr[]")

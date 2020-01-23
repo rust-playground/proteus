@@ -4,6 +4,7 @@ mod constant;
 pub mod getter;
 mod join;
 pub mod setter;
+mod count;
 
 #[doc(inline)]
 pub use constant::Constant;
@@ -15,7 +16,11 @@ pub use getter::Getter;
 pub use join::Join;
 
 #[doc(inline)]
+pub use count::Count;
+
+#[doc(inline)]
 pub use setter::Setter;
 
 pub(crate) use constant::ParsableConst;
 pub(crate) use join::ParsableJoin;
+pub(crate) use count::ParsableCount;

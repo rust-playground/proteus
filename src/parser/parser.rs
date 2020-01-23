@@ -1,7 +1,7 @@
 use crate::action::Action;
 use crate::actions::getter::namespace::Namespace as GetterNamespace;
 use crate::actions::setter::namespace::Namespace as SetterNamespace;
-use crate::actions::{Getter, ParsableConst, ParsableJoin, Setter};
+use crate::actions::{Getter, ParsableConst, ParsableJoin, Setter, ParsableCount};
 use crate::parser::errors::Error;
 use crate::parser::ParsableAction;
 use lazy_static::lazy_static;
@@ -55,6 +55,7 @@ impl Default for ParserBuilder {
         let mut actions: HashMap<String, Box<dyn ParsableAction>> = HashMap::new();
         actions.insert("const".to_string(), Box::new(ParsableConst));
         actions.insert("join".to_string(), Box::new(ParsableJoin));
+        actions.insert("count".to_string(), Box::new(ParsableCount));
         Self { actions }
     }
 }
