@@ -38,12 +38,10 @@ impl Action for Setter {
                                 current = current.as_object_mut().unwrap().get_mut(id).unwrap();
                             }
                             _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!(
-                                        "Attempting to set an Object by id to an {:?}",
-                                        current
-                                    ),
-                                }
+                                return Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to set an Object by id to an {:?}",
+                                    current
+                                ))
                                 .into())
                             }
                         };
@@ -63,12 +61,10 @@ impl Action for Setter {
                                 current = &mut current.as_array_mut().unwrap()[index];
                             }
                             _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!(
-                                        "Attempting to set an Array by index to an {:?}",
-                                        current
-                                    ),
-                                }
+                                return Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to set an Array by index to an {:?}",
+                                    current
+                                ))
                                 .into())
                             }
                         };
@@ -85,127 +81,92 @@ impl Action for Setter {
                                 current = current.as_array_mut().unwrap().last_mut().unwrap();
                             }
                             _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!(
-                                        "Attempting to append an {:?} to an Array",
-                                        current
-                                    ),
-                                }
+                                return Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to append an {:?} to an Array",
+                                    current
+                                ))
                                 .into())
                             }
                         };
                     }
                     Namespace::MergeObject => {
-                        // serde_json::Map does not have 'append' because it's not a fixed type.
-                        // it could be:
-                        // - https://docs.rs/indexmap/1.3.0/indexmap/map/struct.IndexMap.html
-                        // - https://doc.rust-lang.org/std/collections/struct.BTreeMap.html#method.append
-                        //
-                        // PR has been made to expose this functionality https://github.com/serde-rs/json/pull/600
-
-                        // mem::take is ok as getter clones all source data for safety.
-                        match field {
-                            Value::Object(mut o) => {
-                                match current {
-                                    Value::Object(existing) => {
-                                        for (k, v) in std::mem::take(&mut o).into_iter() {
-                                            existing.insert(k, v);
-                                        }
-                                        return Ok(None);
-                                    }
-                                    Value::Null => {
-                                        let mut new = Map::new();
-                                        for (k, v) in std::mem::take(&mut o).into_iter() {
-                                            new.insert(k, v);
-                                        }
-                                        *current = Value::Object(new);
-                                        return Ok(None);
-                                    }
-                                    _ => {
-                                        return Err(SetterError::InvalidDestinationType {
-                                            err: format!(
-                                                "Attempting to merge an Object with and {:?}",
-                                                current
-                                            ),
-                                        }
-                                        .into())
-                                    }
-                                };
-                            }
-                            _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!("Attempting to merge {:?} with an Object", field),
+                        return match field {
+                            Value::Object(mut o) => match current {
+                                Value::Object(existing) => {
+                                    existing.append(&mut o);
+                                    Ok(None)
                                 }
-                                .into())
-                            }
+                                Value::Null => {
+                                    let mut new = Map::new();
+                                    new.append(&mut o);
+                                    *current = Value::Object(new);
+                                    Ok(None)
+                                }
+                                _ => Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to merge an Object with and {:?}",
+                                    current
+                                ))
+                                .into()),
+                            },
+                            _ => Err(SetterError::InvalidDestinationType(format!(
+                                "Attempting to merge {:?} with an Object",
+                                field
+                            ))
+                            .into()),
                         };
                     }
                     Namespace::MergeArray => {
-                        match field {
-                            Value::Array(arr) => {
-                                match current {
-                                    Value::Array(existing) => {
-                                        if arr.len() > existing.len() {
-                                            *existing = arr;
-                                            return Ok(None);
-                                        }
-                                        for (i, v) in arr.into_iter().enumerate() {
-                                            existing[i] = v;
-                                        }
+                        return match field {
+                            Value::Array(arr) => match current {
+                                Value::Array(existing) => {
+                                    if arr.len() > existing.len() {
+                                        *existing = arr;
                                         return Ok(None);
                                     }
-                                    Value::Null => {
-                                        *current = Value::Array(arr);
-                                        return Ok(None);
+                                    for (i, v) in arr.into_iter().enumerate() {
+                                        existing[i] = v;
                                     }
-                                    _ => {
-                                        return Err(SetterError::InvalidDestinationType {
-                                            err: format!(
-                                                "Attempting to merge an Array with and {:?}",
-                                                current
-                                            ),
-                                        }
-                                        .into())
-                                    }
-                                };
-                            }
-                            _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!("Attempting to merge {:?} with an Array", field),
+                                    Ok(None)
                                 }
-                                .into())
-                            }
+                                Value::Null => {
+                                    *current = Value::Array(arr);
+                                    Ok(None)
+                                }
+                                _ => Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to merge an Array with and {:?}",
+                                    current
+                                ))
+                                .into()),
+                            },
+                            _ => Err(SetterError::InvalidDestinationType(format!(
+                                "Attempting to merge {:?} with an Array",
+                                field
+                            ))
+                            .into()),
                         };
                     }
                     Namespace::CombineArray => {
-                        match field {
-                            Value::Array(mut arr) => {
-                                match current {
-                                    Value::Array(existing) => {
-                                        existing.append(&mut arr);
-                                        return Ok(None);
-                                    }
-                                    Value::Null => {
-                                        *current = Value::Array(arr);
-                                        return Ok(None);
-                                    }
-                                    _ => {
-                                        return Err(SetterError::InvalidDestinationType {
-                                            err: format!(
-                                                "Attempting to combine an Array with and {:?}",
-                                                current
-                                            ),
-                                        }
-                                        .into())
-                                    }
-                                };
-                            }
-                            _ => {
-                                return Err(SetterError::InvalidDestinationType {
-                                    err: format!("Attempting to merge {:?} with an Array", field),
+                        return match field {
+                            Value::Array(mut arr) => match current {
+                                Value::Array(existing) => {
+                                    existing.append(&mut arr);
+                                    Ok(None)
                                 }
-                                .into())
-                            }
+                                Value::Null => {
+                                    *current = Value::Array(arr);
+                                    Ok(None)
+                                }
+                                _ => Err(SetterError::InvalidDestinationType(format!(
+                                    "Attempting to combine an Array with and {:?}",
+                                    current
+                                ))
+                                .into()),
+                            },
+                            _ => Err(SetterError::InvalidDestinationType(format!(
+                                "Attempting to merge {:?} with an Array",
+                                field
+                            ))
+                            .into()),
                         };
                     }
                 };

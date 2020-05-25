@@ -1,24 +1,18 @@
-use snafu::Snafu;
 use std::num::ParseIntError;
+use thiserror::Error;
 
 /// This type represents all possible errors that an occur while parsing transformation syntax to generate a [Namespace](enum.Namespace.html) to be used in [Getter](../struct.Getter.html).
-#[derive(Debug, Snafu)]
+#[derive(Error, Debug)]
 pub enum Error {
-    #[snafu(display("Invalid '.' notation for namespace: {}. {}", ns, err))]
+    #[error("Invalid '.' notation for namespace: {}. {}", ns, err)]
     InvalidDotNotation { err: String, ns: String },
 
-    #[snafu(display("error: {}", err))]
-    InvalidNamespaceArrayIndex { err: ParseIntError },
+    #[error(transparent)]
+    InvalidNamespaceArrayIndex(#[from] ParseIntError),
 
-    #[snafu(display("Missing end bracket ']' in array index for namespace: {}", ns))]
-    MissingArrayIndexBracket { ns: String },
+    #[error("Missing end bracket ']' in array index for namespace: {0}")]
+    MissingArrayIndexBracket(String),
 
-    #[snafu(display("Invalid Explicit Key Syntax for namespace {}. Explicit Key Syntax must start with '[\"' and end with '\"]' with any enclosed '\"' escaped.", ns))]
-    InvalidExplicitKeySyntax { ns: String },
-}
-
-impl From<ParseIntError> for Error {
-    fn from(err: ParseIntError) -> Self {
-        Error::InvalidNamespaceArrayIndex { err }
-    }
+    #[error("Invalid Explicit Key Syntax for namespace {0}. Explicit Key Syntax must start with '[\"' and end with '\"]' with any enclosed '\"' escaped.")]
+    InvalidExplicitKeySyntax(String),
 }

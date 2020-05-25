@@ -94,9 +94,7 @@ impl Parser {
                     match key {
                         "const" => Parser::parse_const(caps),
                         "join" => Parser::parse_join(caps),
-                        _ => Err(Error::InvalidActionName {
-                            name: key.to_owned(),
-                        }),
+                        _ => Err(Error::InvalidActionName(key.to_owned())),
                     }
                 }
             },
@@ -119,9 +117,7 @@ impl Parser {
                 s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
             }
             None => {
-                return Err(Error::InvalidQuotedValue {
-                    key: format!("join({})", val),
-                })
+                return Err(Error::InvalidQuotedValue(format!("join({})", val)));
             }
         };
 
@@ -135,9 +131,7 @@ impl Parser {
         }
 
         if values.is_empty() {
-            return Err(Error::InvalidNumberOfProperties {
-                key: "join".to_owned(),
-            });
+            return Err(Error::InvalidNumberOfProperties("join".to_owned()));
         }
         Ok(Box::new(Join::new(sep, values)))
     }
@@ -146,9 +140,7 @@ impl Parser {
     fn parse_const(caps: regex::Captures) -> Result<Box<dyn Action>, Error> {
         let val = caps.name(ACTION_VALUE).unwrap().as_str(); // unwrap safe, has value or never would have match ACTION_RE regex
         if val.is_empty() {
-            Err(Error::MissingActionValue {
-                key: "const".to_owned(),
-            })
+            Err(Error::MissingActionValue("const".to_owned()))
         } else {
             let value: Value = serde_json::from_str(val)?;
             Ok(Box::new(Constant::new(value)))

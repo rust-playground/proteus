@@ -1,8 +1,8 @@
-use snafu::Snafu;
+use thiserror::Error;
 
 /// This type represents all possible errors that an occur while applying a transformation.
-#[derive(Debug, Snafu)]
+#[derive(Error, Debug)]
 pub enum Error {
-    #[snafu(display("Invalid destination type. {}", err))]
-    InvalidDestinationType { err: String },
+    #[error("Invalid destination type. {0}")]
+    InvalidDestinationType(String),
 }

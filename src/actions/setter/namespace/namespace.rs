@@ -115,16 +115,12 @@ impl Namespace {
                     idx += 1;
                     if idx < bytes.len() && bytes[idx] != b'}' {
                         // error invalid merge object syntax
-                        return Err(Error::InvalidMergeObjectSyntax {
-                            ns: input.to_owned(),
-                        });
+                        return Err(Error::InvalidMergeObjectSyntax(input.to_owned()));
                     }
                     idx += 1;
                     if idx != bytes.len() {
                         // error merge object must be the last part in the namespace.
-                        return Err(Error::InvalidMergeObjectSyntax {
-                            ns: input.to_owned(),
-                        });
+                        return Err(Error::InvalidMergeObjectSyntax(input.to_owned()));
                     }
                     namespaces.push(Namespace::MergeObject);
                 }
@@ -139,9 +135,7 @@ impl Namespace {
                     idx += 1;
                     if idx >= bytes.len() {
                         // error incomplete namespace
-                        return Err(Error::MissingArrayIndexBracket {
-                            ns: input.to_owned(),
-                        });
+                        return Err(Error::MissingArrayIndexBracket(input.to_owned()));
                     }
                     match bytes[idx] {
                         b'"' => {
@@ -154,9 +148,9 @@ impl Namespace {
                                         idx += 1;
                                         if bytes[idx] != b']' {
                                             // error invalid explicit key syntax
-                                            return Err(Error::InvalidExplicitKeySyntax {
-                                                ns: input.to_owned(),
-                                            });
+                                            return Err(Error::InvalidExplicitKeySyntax(
+                                                input.to_owned(),
+                                            ));
                                         }
                                         namespaces.push(Namespace::Object {
                                             id: unsafe { String::from_utf8_unchecked(s.clone()) }
@@ -173,9 +167,7 @@ impl Namespace {
                                 };
                             }
                             // error never reached the end bracket of explicit key
-                            return Err(Error::InvalidExplicitKeySyntax {
-                                ns: input.to_owned(),
-                            });
+                            return Err(Error::InvalidExplicitKeySyntax(input.to_owned()));
                         }
                         b']' => {
                             // append array index
@@ -188,16 +180,12 @@ impl Namespace {
                             idx += 1;
                             if idx < bytes.len() && bytes[idx] != b']' {
                                 // error invalid merge object syntax
-                                return Err(Error::InvalidMergeArraySyntax {
-                                    ns: input.to_owned(),
-                                });
+                                return Err(Error::InvalidMergeArraySyntax(input.to_owned()));
                             }
                             idx += 1;
                             if idx != bytes.len() {
                                 // error merge object must be the last part in the namespace.
-                                return Err(Error::InvalidMergeArraySyntax {
-                                    ns: input.to_owned(),
-                                });
+                                return Err(Error::InvalidMergeArraySyntax(input.to_owned()));
                             }
                             namespaces.push(Namespace::MergeArray);
                         }
@@ -206,16 +194,12 @@ impl Namespace {
                             idx += 1;
                             if idx < bytes.len() && bytes[idx] != b']' {
                                 // error invalid merge object syntax
-                                return Err(Error::InvalidCombineArraySyntax {
-                                    ns: input.to_owned(),
-                                });
+                                return Err(Error::InvalidCombineArraySyntax(input.to_owned()));
                             }
                             idx += 1;
                             if idx != bytes.len() {
                                 // error merge object must be the last part in the namespace.
-                                return Err(Error::InvalidCombineArraySyntax {
-                                    ns: input.to_owned(),
-                                });
+                                return Err(Error::InvalidCombineArraySyntax(input.to_owned()));
                             }
                             namespaces.push(Namespace::CombineArray);
                         }
@@ -242,9 +226,7 @@ impl Namespace {
                                 };
                             }
                             // error no end bracket
-                            return Err(Error::MissingArrayIndexBracket {
-                                ns: input.to_owned(),
-                            });
+                            return Err(Error::MissingArrayIndexBracket(input.to_owned()));
                         }
                     }
                 }

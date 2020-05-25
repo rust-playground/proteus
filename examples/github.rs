@@ -6,7 +6,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let github_pull_request = get_github_pr();
     let trans = TransformBuilder::default()
         .add_actions(actions!(
-            ("add(value.ddfk, trim(value.ferwf))", "deans_name"),
             ("pull_request.user.login", "username"),
             ("pull_request.user.url", "user"),
             ("repository.url", "repo"),
@@ -15,10 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             ("pull_request.body", "description"),
             ("pull_request.created_at", "timestamp"),
             ("pull_request.requested_reviewers", "persons_involved"),
-            (
-                "[\"wfenwjkf\']pull_request.user.login",
-                "persons_involved[]"
-            )
+            ("pull_request.user.login", "persons_involved[]")
         )?)
         .build()?;
     let res = trans.apply_from_str(github_pull_request)?;
