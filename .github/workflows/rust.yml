@@ -1,0 +1,38 @@
+name: Lint & Test
+on: [push, pull_request]
+jobs:
+  test:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - name: Install Rust Stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Install Cargo
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+
+      - name: Priming Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-v1-rust-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-v1-rust-
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Lint
+        uses: actions-rs/clippy@master
+        with:
+          args: --all-features --all-targets
+
+      - name: Test
+        run: cargo build --release --all-features
