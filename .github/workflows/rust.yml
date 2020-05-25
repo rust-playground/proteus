@@ -37,4 +37,4 @@ jobs:
           args: --all-features --all-targets
 
       - name: Test
-        run: cargo test --release --all-features
+        run: cargo test --all-features
