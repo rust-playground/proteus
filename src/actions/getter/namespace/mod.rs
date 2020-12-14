@@ -93,7 +93,7 @@ impl Namespace {
                         // error incomplete namespace
                         return Err(Error::MissingArrayIndexBracket(input.to_owned()));
                     }
-                    match bytes[idx] {
+                    return match bytes[idx] {
                         b'"' => {
                             // parse explicit key
                             idx += 1;
@@ -123,7 +123,7 @@ impl Namespace {
                                 };
                             }
                             // error never reached the end bracket of explicit key
-                            return Err(Error::InvalidExplicitKeySyntax(input.to_owned()));
+                            Err(Error::InvalidExplicitKeySyntax(input.to_owned()))
                         }
                         _ => {
                             // parse array index
@@ -148,9 +148,9 @@ impl Namespace {
                                 };
                             }
                             // error no end bracket
-                            return Err(Error::MissingArrayIndexBracket(input.to_owned()));
+                            Err(Error::MissingArrayIndexBracket(input.to_owned()))
                         }
-                    }
+                    };
                 }
                 _ => {
                     s.push(b);
@@ -222,10 +222,7 @@ mod tests {
         let ns = ".field";
         let results = Namespace::parse(ns);
         assert!(results.is_err());
-        let actual = match results.err().unwrap() {
-            Error::InvalidDotNotation { .. } => true,
-            _ => false,
-        };
+        let actual = matches!(results.err().unwrap(), Error::InvalidDotNotation { .. });
         assert!(actual);
 
         let ns = r#"[""].field"#;
@@ -246,10 +243,7 @@ mod tests {
         let ns = ".[0]";
         let results = Namespace::parse(ns);
         assert!(results.is_err());
-        let actual = match results.err().unwrap() {
-            Error::InvalidDotNotation { .. } => true,
-            _ => false,
-        };
+        let actual = matches!(results.err().unwrap(), Error::InvalidDotNotation { .. });
         assert!(actual);
 
         let ns = r#"[""].[0]"#;
@@ -275,10 +269,7 @@ mod tests {
         let ns = ".named[0]";
         let results = Namespace::parse(ns);
         assert!(results.is_err());
-        let actual = match results.err().unwrap() {
-            Error::InvalidDotNotation { .. } => true,
-            _ => false,
-        };
+        let actual = matches!(results.err().unwrap(), Error::InvalidDotNotation { .. });
         assert!(actual);
 
         let ns = r#"[""].named[0]"#;
@@ -300,10 +291,7 @@ mod tests {
         let ns = "[0].";
         let results = Namespace::parse(ns);
         assert!(results.is_err());
-        let actual = match results.err().unwrap() {
-            Error::InvalidDotNotation { .. } => true,
-            _ => false,
-        };
+        let actual = matches!(results.err().unwrap(), Error::InvalidDotNotation { .. });
         assert!(actual);
 
         let ns = "[0]";
@@ -441,10 +429,7 @@ mod tests {
         let ns = r#"["""]"#;
         let results = Namespace::parse(ns);
         assert!(results.is_err());
-        let actual = match results.err().unwrap() {
-            Error::InvalidExplicitKeySyntax { .. } => true,
-            _ => false,
-        };
+        let actual = matches!(results.err().unwrap(), Error::InvalidExplicitKeySyntax { .. });
         assert!(actual);
 
         let ns = r#"["\""]"#;
