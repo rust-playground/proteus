@@ -73,6 +73,13 @@ impl Transformer {
         Ok(value)
     }
 
+    /// applies the transform actions, in order, on the source slice.
+    ///
+    /// The source string MUST be valid utf-8 JSON.
+    pub fn apply_from_slice(&self, source: &[u8]) -> Result<Value, Error> {
+        self.apply(&serde_json::from_slice(&source)?)
+    }
+
     /// applies the transform actions, in order, on the source string.
     ///
     /// The source string MUST be valid JSON.
