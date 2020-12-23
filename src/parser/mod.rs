@@ -13,6 +13,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 static COMMA_SEP_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap());
@@ -20,8 +22,18 @@ static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,
 static ACTION_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap());
 
+static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy::new(|| {
+    let mut m: HashMap<String, Arc<ActionParserFn>> = HashMap::new();
+    m.insert("join".to_string(), Arc::new(parse_join));
+    m.insert("const".to_string(), Arc::new(parse_const));
+    Mutex::new(m)
+});
+
 const ACTION_NAME: &str = "action";
 const ACTION_VALUE: &str = "value";
+
+/// ActionParserFn is function signature used for adding dynamic actions to the parser
+pub type ActionParserFn = dyn Fn(&str) -> Result<Box<dyn Action>, Error> + 'static + Send + Sync;
 
 /// This type represents a single transformation action to be taken containing the source and
 /// destination syntax to be parsed into an [Action](action/trait.Action.html).
@@ -58,6 +70,15 @@ impl<'a> Parsable<'a> {
 pub struct Parser {}
 
 impl Parser {
+    /// add_action_parser adds an Action parsing function to dynamically be parsed.
+    /// NOTE: this WILL overwrite any pre-existing functions with the same name.
+    pub fn add_action_parser(name: &str, f: &'static ActionParserFn) {
+        ACTION_PARSERS
+            .lock()
+            .unwrap()
+            .insert(name.to_owned(), Arc::new(f));
+    }
+
     /// parses a single transformation action to be taken with the provided source & destination.
     pub fn parse(source: &str, destination: &str) -> Result<Box<dyn Action>, Error> {
         let set = SetterNamespace::parse(destination)?;
@@ -96,11 +117,14 @@ impl Parser {
                 None => Err(Error::MissingActionName {}),
                 Some(key) => {
                     let key = key.as_str();
-                    match key {
-                        "const" => Parser::parse_const(caps),
-                        "join" => Parser::parse_join(caps),
-                        _ => Err(Error::InvalidActionName(key.to_owned())),
-                    }
+                    let parse_fn;
+                    match ACTION_PARSERS.lock().unwrap().get(key) {
+                        None => return Err(Error::InvalidActionName(key.to_owned())),
+                        Some(f) => {
+                            parse_fn = f.clone();
+                        }
+                    };
+                    parse_fn(caps.name(ACTION_VALUE).unwrap().as_str()) // unwrap safe, has value or never would have match ACTION_RE regex
                 }
             },
             None => {
@@ -109,48 +133,44 @@ impl Parser {
             }
         }
     }
+}
 
-    #[inline]
-    fn parse_join(caps: regex::Captures) -> Result<Box<dyn Action>, Error> {
-        let val = caps.name(ACTION_VALUE).unwrap().as_str(); // unwrap safe, has value or never would have match ACTION_RE regex
-        let sep_len;
-        let sep = match QUOTED_STR_RE.find(val) {
-            Some(cap) => {
-                let s = cap.as_str();
-                sep_len = s.len();
-                let s = s[..s.len() - 1].trim(); // strip ',' and trim any whitespace
-                s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
-            }
-            None => {
-                return Err(Error::InvalidQuotedValue(format!("join({})", val)));
-            }
+fn parse_const(val: &str) -> Result<Box<dyn Action>, Error> {
+    if val.is_empty() {
+        Err(Error::MissingActionValue("const".to_owned()))
+    } else {
+        let value: Value = serde_json::from_str(val)?;
+        Ok(Box::new(Constant::new(value)))
+    }
+}
+
+fn parse_join(val: &str) -> Result<Box<dyn Action>, Error> {
+    let sep_len;
+    let sep = match QUOTED_STR_RE.find(val) {
+        Some(cap) => {
+            let s = cap.as_str();
+            sep_len = s.len();
+            let s = s[..s.len() - 1].trim(); // strip ',' and trim any whitespace
+            s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
+        }
+        None => {
+            return Err(Error::InvalidQuotedValue(format!("join({})", val)));
+        }
+    };
+
+    let sub_matches = COMMA_SEP_RE.captures_iter(&val[sep_len..]);
+    let mut values = Vec::new();
+    for m in sub_matches {
+        match m.get(0) {
+            Some(m) => values.push(Parser::get_action(m.as_str().trim())?),
+            None => continue,
         };
-
-        let sub_matches = COMMA_SEP_RE.captures_iter(&val[sep_len..]);
-        let mut values = Vec::new();
-        for m in sub_matches {
-            match m.get(0) {
-                Some(m) => values.push(Parser::get_action(m.as_str().trim())?),
-                None => continue,
-            };
-        }
-
-        if values.is_empty() {
-            return Err(Error::InvalidNumberOfProperties("join".to_owned()));
-        }
-        Ok(Box::new(Join::new(sep, values)))
     }
 
-    #[inline]
-    fn parse_const(caps: regex::Captures) -> Result<Box<dyn Action>, Error> {
-        let val = caps.name(ACTION_VALUE).unwrap().as_str(); // unwrap safe, has value or never would have match ACTION_RE regex
-        if val.is_empty() {
-            Err(Error::MissingActionValue("const".to_owned()))
-        } else {
-            let value: Value = serde_json::from_str(val)?;
-            Ok(Box::new(Constant::new(value)))
-        }
+    if values.is_empty() {
+        return Err(Error::InvalidNumberOfProperties("join".to_owned()));
     }
+    Ok(Box::new(Join::new(sep, values)))
 }
 
 #[cfg(test)]
