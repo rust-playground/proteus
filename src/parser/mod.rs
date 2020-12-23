@@ -8,17 +8,17 @@ use crate::action::Action;
 use crate::actions::getter::namespace::Namespace as GetterNamespace;
 use crate::actions::setter::namespace::Namespace as SetterNamespace;
 use crate::actions::{Constant, Getter, Join, Setter};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::borrow::Cow;
 
-lazy_static! {
-    static ref ACTION_RE: Regex = Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap();
-    static ref COMMA_SEP_RE: Regex = Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap();
-    static ref QUOTED_STR_RE: Regex = Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap();
-}
+static COMMA_SEP_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap());
+static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
+static ACTION_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap());
 
 const ACTION_NAME: &str = "action";
 const ACTION_VALUE: &str = "value";
