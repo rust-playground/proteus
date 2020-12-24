@@ -26,7 +26,7 @@ pub static COMMA_SEP_RE: Lazy<Regex> =
 pub static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
 
 static ACTION_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap());
+    Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z0-9_-]*)\((?P<value>.*)\)"#).unwrap());
 
 static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy::new(|| {
     let mut m: HashMap<String, Arc<ActionParserFn>> = HashMap::new();
