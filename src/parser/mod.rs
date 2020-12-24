@@ -1,5 +1,6 @@
 //! Parser of transformation syntax into [Action(s)](action/trait.Action.html).
 
+mod action_parsers;
 mod errors;
 
 pub use errors::Error;
@@ -7,25 +8,30 @@ pub use errors::Error;
 use crate::action::Action;
 use crate::actions::getter::namespace::Namespace as GetterNamespace;
 use crate::actions::setter::namespace::Namespace as SetterNamespace;
-use crate::actions::{Constant, Getter, Join, Setter};
+use crate::actions::{Getter, Setter};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-static COMMA_SEP_RE: Lazy<Regex> =
+/// This is a Regex used to parse comma separated values and is used as a helper within custom
+/// Action Parsers.
+pub static COMMA_SEP_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap());
-static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
+
+/// This is a Regex used to get content within quoted strings and is used as a helper within custom
+/// Action Parsers.
+pub static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
+
 static ACTION_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap());
 
 static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy::new(|| {
     let mut m: HashMap<String, Arc<ActionParserFn>> = HashMap::new();
-    m.insert("join".to_string(), Arc::new(parse_join));
-    m.insert("const".to_string(), Arc::new(parse_const));
+    m.insert("join".to_string(), Arc::new(action_parsers::parse_join));
+    m.insert("const".to_string(), Arc::new(action_parsers::parse_const));
     Mutex::new(m)
 });
 
@@ -135,47 +141,10 @@ impl Parser {
     }
 }
 
-fn parse_const(val: &str) -> Result<Box<dyn Action>, Error> {
-    if val.is_empty() {
-        Err(Error::MissingActionValue("const".to_owned()))
-    } else {
-        let value: Value = serde_json::from_str(val)?;
-        Ok(Box::new(Constant::new(value)))
-    }
-}
-
-fn parse_join(val: &str) -> Result<Box<dyn Action>, Error> {
-    let sep_len;
-    let sep = match QUOTED_STR_RE.find(val) {
-        Some(cap) => {
-            let s = cap.as_str();
-            sep_len = s.len();
-            let s = s[..s.len() - 1].trim(); // strip ',' and trim any whitespace
-            s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
-        }
-        None => {
-            return Err(Error::InvalidQuotedValue(format!("join({})", val)));
-        }
-    };
-
-    let sub_matches = COMMA_SEP_RE.captures_iter(&val[sep_len..]);
-    let mut values = Vec::new();
-    for m in sub_matches {
-        match m.get(0) {
-            Some(m) => values.push(Parser::get_action(m.as_str().trim())?),
-            None => continue,
-        };
-    }
-
-    if values.is_empty() {
-        return Err(Error::InvalidNumberOfProperties("join".to_owned()));
-    }
-    Ok(Box::new(Join::new(sep, values)))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::actions::Constant;
 
     #[test]
     fn direct_getter() -> Result<(), Box<dyn std::error::Error>> {

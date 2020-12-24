@@ -145,7 +145,7 @@ pub mod parser;
 pub mod transformer;
 
 #[doc(inline)]
-pub use parser::{Parsable, Parser};
+pub use parser::{Parsable, Parser, COMMA_SEP_RE, QUOTED_STR_RE};
 
 #[doc(inline)]
 pub use transformer::TransformBuilder;

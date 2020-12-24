@@ -34,4 +34,7 @@ pub enum Error {
 
     #[error("Setter namespace parsing error: {0}")]
     SetterNamespace(#[from] SetterNamespaceError),
+
+    #[error("{0}")]
+    CustomActionParseError(String),
 }

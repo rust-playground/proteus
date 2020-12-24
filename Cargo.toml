@@ -11,7 +11,7 @@ license = "MIT OR Apache-2.0"
 name = "proteus"
 readme = "README.md"
 repository = "https://github.com/rust-playground/proteus"
-version = "0.3.0"
+version = "0.4.0"
 
 [badges.travis-ci]
 repository = "rust-playground/proteus"
