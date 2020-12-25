@@ -424,7 +424,7 @@ mod tests {
         ])?;
         let trans = TransformBuilder::default().add_actions(actions).build()?;
         let res = serde_json::to_string(&trans)?;
-        assert_eq!(res, "{\"actions\":[{\"Setter\":{\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"Getter\":{\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"name\"}}]}}}},{\"Setter\":{\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"Getter\":{\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"metadata\"}}]}}}}]}");
+        assert_eq!(res, "{\"actions\":[{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"name\"}}]}},{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"metadata\"}}]}}]}");
         Ok(())
     }
 }
