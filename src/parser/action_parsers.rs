@@ -31,7 +31,7 @@ pub(super) fn parse_join(val: &str) -> Result<Box<dyn Action>, Error> {
     let mut values = Vec::new();
     for m in sub_matches {
         match m.get(0) {
-            Some(m) => values.push(Parser::get_action(m.as_str().trim())?),
+            Some(m) => values.push(Parser::parse_action(m.as_str().trim())?),
             None => continue,
         };
     }

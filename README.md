@@ -15,6 +15,23 @@ JSON transformation syntax similar to Javascript JSON syntax.**
 proteus = "0.1"
 ```
 
+## Getter/Setter Syntax
+The Getter and Setter syntax is custom to support custom/dynamic Actions and nearly identical with the Setter having 
+additional options. If other parsing syntax is desired it can be used to build the Transformation in the same way that
+is done internally.
+
+#### Getter
+| syntax | description |
+---------|-------------|
+| id | By itself any text is considered to be a JSON object's name of index. |
+| [0] | Same as above ^. |
+| [] | Same as above ^ but grabs the entire array, not just an index. |
+| profile.first_name | Combine Object names with dot notation. |
+| profile.address[0].street | Combinations using dot notation and indexes is also supported. |
+
+
+
+
 ## Example usages
 ```rust
 use proteus::{actions, TransformBuilder};

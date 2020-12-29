@@ -25,8 +25,10 @@ pub static COMMA_SEP_RE: Lazy<Regex> =
 /// Action Parsers.
 pub static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
 
-static ACTION_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r#"(?P<action>[a-zA-Z0-9_-]*)\((?P<value>.*)\)"#).unwrap());
+static ACTION_RE: Lazy<Regex> = Lazy::new(|| {
+    let r = format!(r#"(?P<action>{})\((?P<value>.*)\)"#, ACTION_NAME_BASE_REGEX);
+    Regex::new(&r).unwrap()
+});
 
 static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy::new(|| {
     let mut m: HashMap<String, Arc<ActionParserFn>> = HashMap::new();
@@ -35,6 +37,12 @@ static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy:
     Mutex::new(m)
 });
 
+static ACTION_NAME_RE: Lazy<Regex> = Lazy::new(|| {
+    let r = format!("^{}$", ACTION_NAME_BASE_REGEX);
+    Regex::new(&r).unwrap()
+});
+
+const ACTION_NAME_BASE_REGEX: &str = "[a-zA-Z0-9_]+";
 const ACTION_NAME: &str = "action";
 const ACTION_VALUE: &str = "value";
 
@@ -78,17 +86,31 @@ pub struct Parser {}
 impl Parser {
     /// add_action_parser adds an Action parsing function to dynamically be parsed.
     /// NOTE: this WILL overwrite any pre-existing functions with the same name.
-    pub fn add_action_parser(name: &str, f: &'static ActionParserFn) {
+    ///
+    /// name only accepts ASCII letters, numbers and _ equivalent to [a-zA-Z0-9_].
+    pub fn add_action_parser(name: &str, f: &'static ActionParserFn) -> Result<(), Error> {
+        dbg!(ACTION_NAME_RE.is_match(name));
+        if ACTION_RE
+            .captures(name)
+            .ok_or_else(|| Error::InvalidActionName(name.to_owned()))?
+            .name(ACTION_NAME)
+            .ok_or_else(|| Error::InvalidActionName(name.to_owned()))?
+            .as_str()
+            != name
+        {
+            return Err(Error::InvalidActionName(name.to_owned()));
+        }
         ACTION_PARSERS
             .lock()
             .unwrap()
             .insert(name.to_owned(), Arc::new(f));
+        Ok(())
     }
 
     /// parses a single transformation action to be taken with the provided source & destination.
     pub fn parse(source: &str, destination: &str) -> Result<Box<dyn Action>, Error> {
         let set = SetterNamespace::parse(destination)?;
-        let action = Parser::get_action(source)?;
+        let action = Parser::parse_action(source)?;
         Ok(Box::new(Setter::new(set, action)))
     }
 
@@ -108,10 +130,9 @@ impl Parser {
         Parser::parse_multi(&parsables)
     }
 
-    // TODO: recursive, limit recursion to a hard max. I'm sure there's a way to make it NOT recursive to avoid a stack overflow
-    //       but not sure it's worth it as nobody should be making such a complex action in the first place and would likely cause a
-    //       stack overflow at runtime even if it could be parsed, so not worth the extra complexity.
-    fn get_action(source: &str) -> Result<Box<dyn Action>, Error> {
+    /// parses an [Action](action/trait.Action.html) given the provided str. This is primarily used
+    /// as a helper in custom Action Parsers.
+    pub fn parse_action(source: &str) -> Result<Box<dyn Action>, Error> {
         // edge case where there is no action but it looks like there's one inside of an
         // explicit key eg. '["const()"]'
         if source.starts_with(r#"[""#) {
