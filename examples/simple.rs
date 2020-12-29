@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     "key":"value"
                 },
                 "my_arr":[null,"arr_value",null]
-            }
+            },
         }"#;
     let trans = TransformBuilder::default()
         .add_actions(actions!(

@@ -1,6 +1,6 @@
 [package]
 authors = ["Dean Karn <dean.karn@gmail.com>"]
-description = "Proteus is intended to make dynamic transformation of data using serde serializable, deserialize using JSON and a JSON transformation syntax similar to Javascript JSON syntax."
+description = "Proteus is intended to make dynamic transformation of data using serde serializable, deserialize using JSON and a JSON transformation syntax similar to Javascript JSON syntax. It also supports registering custom Actions to be used in the syntax."
 edition = "2018"
 keywords = [
     "json",

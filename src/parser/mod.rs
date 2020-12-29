@@ -89,15 +89,7 @@ impl Parser {
     ///
     /// name only accepts ASCII letters, numbers and _ equivalent to [a-zA-Z0-9_].
     pub fn add_action_parser(name: &str, f: &'static ActionParserFn) -> Result<(), Error> {
-        dbg!(ACTION_NAME_RE.is_match(name));
-        if ACTION_RE
-            .captures(name)
-            .ok_or_else(|| Error::InvalidActionName(name.to_owned()))?
-            .name(ACTION_NAME)
-            .ok_or_else(|| Error::InvalidActionName(name.to_owned()))?
-            .as_str()
-            != name
-        {
+        if !ACTION_NAME_RE.is_match(name) {
             return Err(Error::InvalidActionName(name.to_owned()));
         }
         ACTION_PARSERS

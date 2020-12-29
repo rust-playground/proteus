@@ -6,7 +6,7 @@
 [crates.io]: https://crates.io/crates/proteus
 
 **This library is intended to make dynamic transformation of data using serde serializable, deserialize using JSON and a 
-JSON transformation syntax similar to Javascript JSON syntax.**
+JSON transformation syntax similar to Javascript JSON syntax. It supports registering custom Actions for use in syntax**
 
 ---
 
@@ -20,17 +20,28 @@ The Getter and Setter syntax is custom to support custom/dynamic Actions and nea
 additional options. If other parsing syntax is desired it can be used to build the Transformation in the same way that
 is done internally.
 
+**NOTE:** order of operations is important.
+
 #### Getter
 | syntax | description |
 ---------|-------------|
-| id | By itself any text is considered to be a JSON object's name of index. |
+| | This sets the entire result to the provided value. |
+| id | Sets a JSON Object's name. eg. key in HashMap |
 | [0] | Same as above ^. |
-| [] | Same as above ^ but grabs the entire array, not just an index. |
 | profile.first_name | Combine Object names with dot notation. |
 | profile.address[0].street | Combinations using dot notation and indexes is also supported. |
 
 
-
+| syntax | description |
+---------|-------------|
+| | this will grab the top-level value which could be any valid type: Object, array, ... |
+| id | By itself any text is considered to be a JSON object's name of index. |
+| [] | This appends the source **data** to an array, creating it if it doesn't exist and is only valid at the end of set syntax eg. profile.address[] |
+| [\+] | The source Array should append all of it's values onto the destination Array and is only valid at the end of set syntax eg. profile.address[] |
+| [\-] | The source Array values should replace the destination Array's values at the overlapping indexes and is only valid at the end of set syntax eg. profile.address[] |
+| {} | This merges the supplied Object overtop of the existing and is only valid at the end of set syntax eg. profile{} |
+| profile.first_name | Combine Object names with dot notation. |
+| profile.address[0].street | Combinations using dot notation and indexes is also supported. |
 
 ## Example usages
 ```rust
