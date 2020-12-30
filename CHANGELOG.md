@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2020-05-25
 ### Changed
-- Converted to use `anyhow` and `thiserror`.
+- Converted to use `thiserror`.
 - Reorganized code and exports.
 
 ## [0.1.1] - 2020-01-08
