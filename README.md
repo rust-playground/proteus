@@ -35,9 +35,9 @@ is done internally.
 | syntax | description |
 ---------|-------------|
 | | this will grab the top-level value which could be any valid type: Object, array, ... |
-| id | By itself any text is considered to be a JSON object's name of index. |
+| id | By itself any text is considered to be a JSON Object's name. |
 | [] | This appends the source **data** to an array, creating it if it doesn't exist and is only valid at the end of set syntax eg. profile.address[] |
-| [\+] | The source Array should append all of it's values onto the destination Array and is only valid at the end of set syntax eg. profile.address[] |
+| [\+] | The source Array should append all of it's values into the destination Array and is only valid at the end of set syntax eg. profile.address[] |
 | [\-] | The source Array values should replace the destination Array's values at the overlapping indexes and is only valid at the end of set syntax eg. profile.address[] |
 | {} | This merges the supplied Object overtop of the existing and is only valid at the end of set syntax eg. profile{} |
 | profile.first_name | Combine Object names with dot notation. |
