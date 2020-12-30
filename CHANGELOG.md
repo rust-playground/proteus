@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Exposed internal `COMMA_SEP_RE` and `QUOTED_STR_RE` helper regexes for use in custom `ActionParserFn`'s.
+- Changed from `lazy_static!` to `once_cell`.
 
 
 ## [0.3.0] - 2020-12-14
