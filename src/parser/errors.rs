@@ -12,7 +12,7 @@ pub enum Error {
     #[error("Brackets: () must always be preceded by and action name.")]
     MissingActionName,
 
-    #[error("Action Name: '{0}' is not recognized.")]
+    #[error("Action Name: '{0}' is invalid.")]
     InvalidActionName(String),
 
     #[error(
@@ -34,4 +34,7 @@ pub enum Error {
 
     #[error("Setter namespace parsing error: {0}")]
     SetterNamespace(#[from] SetterNamespaceError),
+
+    #[error("{0}")]
+    CustomActionParseError(String),
 }

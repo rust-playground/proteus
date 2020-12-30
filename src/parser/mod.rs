@@ -1,5 +1,6 @@
 //! Parser of transformation syntax into [Action(s)](action/trait.Action.html).
 
+mod action_parsers;
 mod errors;
 
 pub use errors::Error;
@@ -7,21 +8,46 @@ pub use errors::Error;
 use crate::action::Action;
 use crate::actions::getter::namespace::Namespace as GetterNamespace;
 use crate::actions::setter::namespace::Namespace as SetterNamespace;
-use crate::actions::{Constant, Getter, Join, Setter};
-use lazy_static::lazy_static;
+use crate::actions::{Getter, Setter};
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::borrow::Cow;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
-lazy_static! {
-    static ref ACTION_RE: Regex = Regex::new(r#"(?P<action>[a-zA-Z]*)\((?P<value>.*)\)"#).unwrap();
-    static ref COMMA_SEP_RE: Regex = Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap();
-    static ref QUOTED_STR_RE: Regex = Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap();
-}
+/// This is a Regex used to parse comma separated values and is used as a helper within custom
+/// Action Parsers.
+pub static COMMA_SEP_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"[^,(]*(?:\([^)]*\))*[^,]*"#).unwrap());
 
+/// This is a Regex used to get content within quoted strings and is used as a helper within custom
+/// Action Parsers.
+pub static QUOTED_STR_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^"(.*?[^\\])"\s*,"#).unwrap());
+
+static ACTION_RE: Lazy<Regex> = Lazy::new(|| {
+    let r = format!(r#"(?P<action>{})\((?P<value>.*)\)"#, ACTION_NAME_BASE_REGEX);
+    Regex::new(&r).unwrap()
+});
+
+static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy::new(|| {
+    let mut m: HashMap<String, Arc<ActionParserFn>> = HashMap::new();
+    m.insert("join".to_string(), Arc::new(action_parsers::parse_join));
+    m.insert("const".to_string(), Arc::new(action_parsers::parse_const));
+    Mutex::new(m)
+});
+
+static ACTION_NAME_RE: Lazy<Regex> = Lazy::new(|| {
+    let r = format!("^{}$", ACTION_NAME_BASE_REGEX);
+    Regex::new(&r).unwrap()
+});
+
+const ACTION_NAME_BASE_REGEX: &str = "[a-zA-Z0-9_]+";
 const ACTION_NAME: &str = "action";
 const ACTION_VALUE: &str = "value";
+
+/// ActionParserFn is function signature used for adding dynamic actions to the parser
+pub type ActionParserFn = dyn Fn(&str) -> Result<Box<dyn Action>, Error> + 'static + Send + Sync;
 
 /// This type represents a single transformation action to be taken containing the source and
 /// destination syntax to be parsed into an [Action](action/trait.Action.html).
@@ -58,10 +84,25 @@ impl<'a> Parsable<'a> {
 pub struct Parser {}
 
 impl Parser {
+    /// add_action_parser adds an Action parsing function to dynamically be parsed.
+    /// NOTE: this WILL overwrite any pre-existing functions with the same name.
+    ///
+    /// name only accepts ASCII letters, numbers and _ equivalent to [a-zA-Z0-9_].
+    pub fn add_action_parser(name: &str, f: &'static ActionParserFn) -> Result<(), Error> {
+        if !ACTION_NAME_RE.is_match(name) {
+            return Err(Error::InvalidActionName(name.to_owned()));
+        }
+        ACTION_PARSERS
+            .lock()
+            .unwrap()
+            .insert(name.to_owned(), Arc::new(f));
+        Ok(())
+    }
+
     /// parses a single transformation action to be taken with the provided source & destination.
     pub fn parse(source: &str, destination: &str) -> Result<Box<dyn Action>, Error> {
         let set = SetterNamespace::parse(destination)?;
-        let action = Parser::get_action(source)?;
+        let action = Parser::parse_action(source)?;
         Ok(Box::new(Setter::new(set, action)))
     }
 
@@ -81,10 +122,9 @@ impl Parser {
         Parser::parse_multi(&parsables)
     }
 
-    // TODO: recursive, limit recursion to a hard max. I'm sure there's a way to make it NOT recursive to avoid a stack overflow
-    //       but not sure it's worth it as nobody should be making such a complex action in the first place and would likely cause a
-    //       stack overflow at runtime even if it could be parsed, so not worth the extra complexity.
-    fn get_action(source: &str) -> Result<Box<dyn Action>, Error> {
+    /// parses an [Action](action/trait.Action.html) given the provided str. This is primarily used
+    /// as a helper in custom Action Parsers.
+    pub fn parse_action(source: &str) -> Result<Box<dyn Action>, Error> {
         // edge case where there is no action but it looks like there's one inside of an
         // explicit key eg. '["const()"]'
         if source.starts_with(r#"[""#) {
@@ -96,11 +136,14 @@ impl Parser {
                 None => Err(Error::MissingActionName {}),
                 Some(key) => {
                     let key = key.as_str();
-                    match key {
-                        "const" => Parser::parse_const(caps),
-                        "join" => Parser::parse_join(caps),
-                        _ => Err(Error::InvalidActionName(key.to_owned())),
-                    }
+                    let parse_fn;
+                    match ACTION_PARSERS.lock().unwrap().get(key) {
+                        None => return Err(Error::InvalidActionName(key.to_owned())),
+                        Some(f) => {
+                            parse_fn = f.clone();
+                        }
+                    };
+                    parse_fn(caps.name(ACTION_VALUE).unwrap().as_str()) // unwrap safe, has value or never would have match ACTION_RE regex
                 }
             },
             None => {
@@ -109,53 +152,12 @@ impl Parser {
             }
         }
     }
-
-    #[inline]
-    fn parse_join(caps: regex::Captures) -> Result<Box<dyn Action>, Error> {
-        let val = caps.name(ACTION_VALUE).unwrap().as_str(); // unwrap safe, has value or never would have match ACTION_RE regex
-        let sep_len;
-        let sep = match QUOTED_STR_RE.find(val) {
-            Some(cap) => {
-                let s = cap.as_str();
-                sep_len = s.len();
-                let s = s[..s.len() - 1].trim(); // strip ',' and trim any whitespace
-                s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
-            }
-            None => {
-                return Err(Error::InvalidQuotedValue(format!("join({})", val)));
-            }
-        };
-
-        let sub_matches = COMMA_SEP_RE.captures_iter(&val[sep_len..]);
-        let mut values = Vec::new();
-        for m in sub_matches {
-            match m.get(0) {
-                Some(m) => values.push(Parser::get_action(m.as_str().trim())?),
-                None => continue,
-            };
-        }
-
-        if values.is_empty() {
-            return Err(Error::InvalidNumberOfProperties("join".to_owned()));
-        }
-        Ok(Box::new(Join::new(sep, values)))
-    }
-
-    #[inline]
-    fn parse_const(caps: regex::Captures) -> Result<Box<dyn Action>, Error> {
-        let val = caps.name(ACTION_VALUE).unwrap().as_str(); // unwrap safe, has value or never would have match ACTION_RE regex
-        if val.is_empty() {
-            Err(Error::MissingActionValue("const".to_owned()))
-        } else {
-            let value: Value = serde_json::from_str(val)?;
-            Ok(Box::new(Constant::new(value)))
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::actions::Constant;
 
     #[test]
     fn direct_getter() -> Result<(), Box<dyn std::error::Error>> {

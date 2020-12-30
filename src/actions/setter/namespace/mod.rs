@@ -51,7 +51,6 @@ impl Display for Namespace {
             Namespace::MergeArray => write!(f, "[-]"),
             Namespace::CombineArray => write!(f, "[+]"),
             Namespace::Array { index } => write!(f, "[{}]", index),
-            //            Namespace::TopLevelSet => write!(f, ""),
         }
     }
 }
