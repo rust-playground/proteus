@@ -67,6 +67,7 @@ impl Transformer {
     }
 
     /// applies the transform actions, in order, on the source and returns a final Value.
+    #[inline]
     pub fn apply(&self, source: &Value) -> Result<Value, Error> {
         let mut value = Value::Null;
         self.apply_to_destination(source, &mut value)?;
@@ -76,6 +77,7 @@ impl Transformer {
     /// applies the transform actions, in order, on the source slice.
     ///
     /// The source string MUST be valid utf-8 JSON.
+    #[inline]
     pub fn apply_from_slice(&self, source: &[u8]) -> Result<Value, Error> {
         self.apply(&serde_json::from_slice(&source)?)
     }
@@ -83,6 +85,7 @@ impl Transformer {
     /// applies the transform actions, in order, on the source string.
     ///
     /// The source string MUST be valid JSON.
+    #[inline]
     pub fn apply_from_str<'a, S>(&self, source: S) -> Result<Value, Error>
     where
         S: Into<Cow<'a, str>>,
@@ -94,6 +97,7 @@ impl Transformer {
     /// represented by D.
     ///
     /// The source string MUST be valid JSON.
+    #[inline]
     pub fn apply_from_str_to<'a, S, D>(&self, source: S) -> Result<D, Error>
     where
         S: Into<Cow<'a, str>>,
@@ -105,6 +109,7 @@ impl Transformer {
 
     /// applies the transform actions, in order, on the serializable source and returns the type
     /// represented by D.
+    #[inline]
     pub fn apply_to<S, D>(&self, source: S) -> Result<D, Error>
     where
         S: Serialize,
@@ -425,6 +430,20 @@ mod tests {
         let trans = TransformBuilder::default().add_actions(actions).build()?;
         let res = serde_json::to_string(&trans)?;
         assert_eq!(res, "{\"actions\":[{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"name\"}}]}},{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"metadata\"}}]}}]}");
+        Ok(())
+    }
+
+    #[test]
+    fn test_set_and_get_top_level() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[Parsable::new("", "")])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+        let input = json!({
+            "existing_key":"my_val1",
+            "my_array":["idx_0_value"]
+        });
+        let expected = json!({"existing_key":"my_val1","my_array":["idx_0_value"]});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
         Ok(())
     }
 }

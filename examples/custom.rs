@@ -3,6 +3,8 @@ use proteus::parser::Error;
 use proteus::{actions, Parser, TransformBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
+use std::ops::Deref;
 
 // This example shows how to create, register and use a custom Action
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -34,19 +36,21 @@ impl CustomAction {
 
 #[typetag::serde]
 impl Action for CustomAction {
-    fn apply(
+    fn apply<'a>(
         &self,
-        _source: &Value,
+        _source: &'a Value,
         _destination: &mut Value,
-    ) -> Result<Option<Value>, proteus::Error> {
+    ) -> Result<Option<Cow<'a, Value>>, proteus::Error> {
         match self.action.apply(_source, _destination) {
             Ok(v) => match v {
                 None => Ok(None),
-                Some(v) => match v {
-                    Value::String(s) => Ok(Some(Value::String(s + " from my custom function"))),
-                    _ => Ok(Some(Value::String(
+                Some(v) => match v.deref() {
+                    Value::String(s) => Ok(Some(Cow::Owned(Value::String(
+                        s.to_owned() + " from my custom function",
+                    )))),
+                    _ => Ok(Some(Cow::Owned(Value::String(
                         v.to_string() + " from my custom function",
-                    ))),
+                    )))),
                 },
             },
             Err(e) => Err(e),

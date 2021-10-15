@@ -20,21 +20,30 @@ The Getter and Setter syntax is custom to support custom/dynamic Actions and nea
 additional options. If other parsing syntax is desired it can be used to build the Transformation in the same way that
 is done internally.
 
-**NOTE:** order of operations is important.
+The transformation syntax is very similar to access JSON data in Javascript.
+To handle special characters such as ``(blank), `[`, `]`, `"` and `.` you can use the explicit
+key syntax `["example[].blah"]` which would represent the key in the following JSON:
+```json
+{
+  "example[].blah" : "my value"
+}
+```
+
+**IMPORTANT:** order of operations is important.
 
 #### Getter
 | syntax | description |
 ---------|-------------|
-| | This sets the entire result to the provided value. |
-| id | Sets a JSON Object's name. eg. key in HashMap |
-| [0] | Same as above ^. |
+| | this will grab the top-level value which could be any valid type: Object, array, ... |
+| id | Gets a JSON Object's name. eg. key in HashMap |
+| [0] | Gets a JSON Arrays index at the specified index. |
 | profile.first_name | Combine Object names with dot notation. |
 | profile.address[0].street | Combinations using dot notation and indexes is also supported. |
 
-
+#### Setter
 | syntax | description |
 ---------|-------------|
-| | this will grab the top-level value which could be any valid type: Object, array, ... |
+| | this will set the top-level value in the destination |
 | id | By itself any text is considered to be a JSON Object's name. |
 | [] | This appends the source **data** to an array, creating it if it doesn't exist and is only valid at the end of set syntax eg. profile.address[] |
 | [\+] | The source Array should append all of it's values into the destination Array and is only valid at the end of set syntax eg. profile.address[] |

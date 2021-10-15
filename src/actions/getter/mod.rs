@@ -5,6 +5,7 @@ use crate::errors::Error;
 use namespace::Namespace;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
 
 /// This type represents an [Action](../action/trait.Action.html) which extracts data from the
 /// source JSON Value.
@@ -21,7 +22,11 @@ impl Getter {
 
 #[typetag::serde]
 impl Action for Getter {
-    fn apply(&self, source: &Value, _destination: &mut Value) -> Result<Option<Value>, Error> {
+    fn apply<'a>(
+        &self,
+        source: &'a Value,
+        _destination: &mut Value,
+    ) -> Result<Option<Cow<'a, Value>>, Error> {
         let mut current = source;
         for ns in &self.namespace {
             current = match expand(ns, current)? {
@@ -29,7 +34,7 @@ impl Action for Getter {
                 None => return Ok(None),
             };
         }
-        Ok(Some(current.clone()))
+        Ok(Some(Cow::Borrowed(current)))
     }
 }
 
@@ -60,7 +65,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(Value::String("value".into())));
+        assert_eq!(res, Some(Cow::Owned(Value::String("value".into()))));
         Ok(())
     }
 
@@ -74,7 +79,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(Value::String("value".into())));
+        assert_eq!(res, Some(Cow::Owned(Value::String("value".into()))));
         Ok(())
     }
 
@@ -85,7 +90,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(Value::String("value".into())));
+        assert_eq!(res, Some(Cow::Owned(Value::String("value".into()))));
         Ok(())
     }
 
@@ -96,7 +101,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(json!(["value"])));
+        assert_eq!(res, Some(Cow::Owned(json!(["value"]))));
         Ok(())
     }
 
@@ -107,7 +112,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(json!("value")));
+        assert_eq!(res, Some(Cow::Owned(json!("value"))));
         Ok(())
     }
 
@@ -118,7 +123,7 @@ mod tests {
         let mut output = Value::Object(Map::new());
         let getter = Getter::new(ns);
         let res = getter.apply(&input, &mut output)?;
-        assert_eq!(res, Some(json!("value")));
+        assert_eq!(res, Some(Cow::Owned(json!("value"))));
         Ok(())
     }
 }
