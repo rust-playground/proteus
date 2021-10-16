@@ -61,7 +61,7 @@ impl Transformer {
         destination: &mut Value,
     ) -> Result<(), Error> {
         for a in self.actions.iter() {
-            a.apply(&source, destination)?;
+            a.apply(source, destination)?;
         }
         Ok(())
     }
@@ -79,7 +79,7 @@ impl Transformer {
     /// The source string MUST be valid utf-8 JSON.
     #[inline]
     pub fn apply_from_slice(&self, source: &[u8]) -> Result<Value, Error> {
-        self.apply(&serde_json::from_slice(&source)?)
+        self.apply(&serde_json::from_slice(source)?)
     }
 
     /// applies the transform actions, in order, on the source string.

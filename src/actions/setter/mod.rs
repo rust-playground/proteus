@@ -131,7 +131,7 @@ impl Action for Setter {
                             Value::Array(arr) => match current {
                                 Value::Array(existing) => {
                                     if arr.len() > existing.len() {
-                                        *existing = arr.clone();
+                                        *existing = arr;
                                         return Ok(None);
                                     }
                                     for (i, v) in arr.into_iter().enumerate() {
@@ -140,7 +140,7 @@ impl Action for Setter {
                                     Ok(None)
                                 }
                                 Value::Null => {
-                                    *current = Value::Array(arr.clone());
+                                    *current = Value::Array(arr);
                                     Ok(None)
                                 }
                                 _ => Err(SetterError::InvalidDestinationType(format!(

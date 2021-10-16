@@ -38,7 +38,7 @@ impl Action for Join {
                             if s.is_empty() {
                                 continue;
                             }
-                            result.push_str(&s);
+                            result.push_str(s);
                         }
                         _ => {
                             let s = v.to_string();
