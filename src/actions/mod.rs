@@ -3,6 +3,7 @@
 mod constant;
 pub mod getter;
 mod join;
+mod len;
 pub mod setter;
 
 #[doc(inline)]
@@ -13,6 +14,9 @@ pub use getter::Getter;
 
 #[doc(inline)]
 pub use join::Join;
+
+#[doc(inline)]
+pub use len::Len;
 
 #[doc(inline)]
 pub use setter::Setter;

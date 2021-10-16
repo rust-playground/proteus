@@ -1,5 +1,5 @@
 use crate::action::Action;
-use crate::actions::{Constant, Join};
+use crate::actions::{Constant, Join, Len};
 use crate::parser::Error;
 use crate::{Parser, COMMA_SEP_RE, QUOTED_STR_RE};
 use serde_json::Value;
@@ -40,4 +40,22 @@ pub(super) fn parse_join(val: &str) -> Result<Box<dyn Action>, Error> {
         return Err(Error::InvalidNumberOfProperties("join".to_owned()));
     }
     Ok(Box::new(Join::new(sep, values)))
+}
+
+pub(super) fn parse_len(val: &str) -> Result<Box<dyn Action>, Error> {
+    if val.is_empty() {
+        Err(Error::MissingActionValue("const".to_owned()))
+    } else {
+        // let action = match QUOTED_STR_RE.find(val) {
+        //     Some(cap) => {
+        //         let s = cap.as_str();
+        //         s[1..s.len() - 1].to_string() // remove '"" double quotes from beginning and end.
+        //     }
+        //     None => {
+        //         return Err(Error::InvalidQuotedValue(format!("len({})", val)));
+        //     }s
+        // };
+        let action = Parser::parse_action(val)?;
+        Ok(Box::new(Len::new(action)))
+    }
 }
