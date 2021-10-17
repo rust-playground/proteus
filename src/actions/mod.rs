@@ -5,6 +5,7 @@ pub mod getter;
 mod join;
 mod len;
 pub mod setter;
+mod sum;
 
 #[doc(inline)]
 pub use constant::Constant;
@@ -17,6 +18,9 @@ pub use join::Join;
 
 #[doc(inline)]
 pub use len::Len;
+
+#[doc(inline)]
+pub use sum::Sum;
 
 #[doc(inline)]
 pub use setter::Setter;

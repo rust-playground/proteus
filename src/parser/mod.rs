@@ -35,6 +35,7 @@ static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy:
     m.insert("join".to_string(), Arc::new(action_parsers::parse_join));
     m.insert("const".to_string(), Arc::new(action_parsers::parse_const));
     m.insert("len".to_string(), Arc::new(action_parsers::parse_len));
+    m.insert("sum".to_string(), Arc::new(action_parsers::parse_sum));
     Mutex::new(m)
 });
 

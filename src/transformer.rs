@@ -446,4 +446,51 @@ mod tests {
         assert_eq!(expected, output);
         Ok(())
     }
+
+    #[test]
+    fn test_sum() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new(r#"sum(const(1.1), arr, len(obj))"#, "sum"),
+            Parsable::new("sum(len(arr))", "sum2"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({
+            "arr": [1, 2, 3],
+            "obj": {"key":"value"}
+        });
+        let expected = json!({"sum":8.1, "sum2": 3});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+
+        let actions = Parser::parse_multi(&[Parsable::new("sum()", "sum")])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!([1, 2, 3]);
+        let expected = json!({"sum":6});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_len() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new("len()", "len1"),
+            Parsable::new("len(arr)", "len2"),
+            Parsable::new("len(obj)", "len3"),
+            Parsable::new("len(obj.key)", "len4"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({
+            "arr": [1, 2, 3],
+            "obj": {"key":"value"}
+        });
+        let expected = json!({"len1": 2, "len2": 3, "len3": 1, "len4": 5});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
 }
