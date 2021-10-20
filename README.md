@@ -188,6 +188,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 ```
 
+#### Actions
+The following are the supported actions.
+
+|action|description|
+|------|-----------|
+|const("Mr.")|Is used to define a constant value.|
+|join(",", const("Mr."), first_name, last_name)|Joins one or more using the provided separator|
+|len(array_field)|Returns the length of a string, array or an object(by number of keys).|
+|strip_start("v", key)|Strips the provided prefix from string values.|
+|strip_end("v", key)|Strips the provided suffix from string values.|
+|sum(key)|Sums the provided values.|
+|trim(key)|Trim the start and end whitespace from strings.|
+|trim_start(key)|Trim the start whitespace from strings.|
+|trim_end(key)|Trim the end whitespace from strings.|
+
+
 #### License
 
 <sup>
