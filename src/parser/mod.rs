@@ -45,6 +45,14 @@ static ACTION_PARSERS: Lazy<Mutex<HashMap<String, Arc<ActionParserFn>>>> = Lazy:
         "trim_end".to_string(),
         Arc::new(action_parsers::parse_trim_end),
     );
+    m.insert(
+        "strip_prefix".to_string(),
+        Arc::new(action_parsers::parse_strip_prefix),
+    );
+    m.insert(
+        "strip_suffix".to_string(),
+        Arc::new(action_parsers::parse_strip_suffix),
+    );
     Mutex::new(m)
 });
 

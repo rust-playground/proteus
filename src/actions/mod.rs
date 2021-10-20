@@ -5,6 +5,7 @@ pub mod getter;
 mod join;
 mod len;
 pub mod setter;
+mod strip;
 mod sum;
 mod trim;
 
@@ -25,6 +26,9 @@ pub use sum::Sum;
 
 #[doc(inline)]
 pub use trim::{Trim, Type as TrimType};
+
+#[doc(inline)]
+pub use strip::{Strip, Type as StripType};
 
 #[doc(inline)]
 pub use setter::Setter;

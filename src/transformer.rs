@@ -509,4 +509,19 @@ mod tests {
         assert_eq!(expected, output);
         Ok(())
     }
+
+    #[test]
+    fn test_strip() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new(r#"strip_prefix("v", key)"#, "res1"),
+            Parsable::new(r#"strip_suffix("e", key)"#, "res2"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({"key": "value"});
+        let expected = json!({"res1": "alue", "res2": "valu"});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
 }
