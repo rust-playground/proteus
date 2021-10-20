@@ -1,5 +1,5 @@
 use crate::action::Action;
-use crate::actions::{Constant, Join, Len, Sum};
+use crate::actions::{Constant, Join, Len, Sum, Trim, TrimType};
 use crate::parser::Error;
 use crate::{Parser, COMMA_SEP_RE, QUOTED_STR_RE};
 use serde_json::Value;
@@ -61,4 +61,19 @@ pub(super) fn parse_sum(val: &str) -> Result<Box<dyn Action>, Error> {
         return Err(Error::InvalidNumberOfProperties("sum".to_owned()));
     }
     Ok(Box::new(Sum::new(values)))
+}
+
+pub(super) fn parse_trim(val: &str) -> Result<Box<dyn Action>, Error> {
+    let action = Parser::parse_action(val)?;
+    Ok(Box::new(Trim::new(TrimType::Trim, action)))
+}
+
+pub(super) fn parse_trim_start(val: &str) -> Result<Box<dyn Action>, Error> {
+    let action = Parser::parse_action(val)?;
+    Ok(Box::new(Trim::new(TrimType::TrimStart, action)))
+}
+
+pub(super) fn parse_trim_end(val: &str) -> Result<Box<dyn Action>, Error> {
+    let action = Parser::parse_action(val)?;
+    Ok(Box::new(Trim::new(TrimType::TrimEnd, action)))
 }

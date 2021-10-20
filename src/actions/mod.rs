@@ -6,6 +6,7 @@ mod join;
 mod len;
 pub mod setter;
 mod sum;
+mod trim;
 
 #[doc(inline)]
 pub use constant::Constant;
@@ -21,6 +22,9 @@ pub use len::Len;
 
 #[doc(inline)]
 pub use sum::Sum;
+
+#[doc(inline)]
+pub use trim::{Trim, Type as TrimType};
 
 #[doc(inline)]
 pub use setter::Setter;

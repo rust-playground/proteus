@@ -493,4 +493,20 @@ mod tests {
         assert_eq!(expected, output);
         Ok(())
     }
+
+    #[test]
+    fn test_trim() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new("trim(key)", "res1"),
+            Parsable::new("trim_start(key)", "res2"),
+            Parsable::new("trim_end(key)", "res3"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({"key": " value "});
+        let expected = json!({"res1": "value", "res2": "value ", "res3": " value"});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
 }

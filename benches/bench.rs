@@ -315,6 +315,45 @@ fn criterion_benchmark(c: &mut Criterion) {
         });
     }
     group.finish();
+
+    let mut group = c.benchmark_group("trim");
+    for (name, input, trans) in [
+        (
+            "trim",
+            r#"{"key":" value "}"#,
+            TransformBuilder::default()
+                .add_actions(actions!(("trim(key)", "trim")).unwrap())
+                .build()
+                .unwrap(),
+        ),
+        (
+            "trim_start",
+            r#"{"key":" value "}"#,
+            TransformBuilder::default()
+                .add_actions(actions!(("trim_start(key)", "trim_start")).unwrap())
+                .build()
+                .unwrap(),
+        ),
+        (
+            "trim_end",
+            r#"{"key":" value "}"#,
+            TransformBuilder::default()
+                .add_actions(actions!(("trim_end(key)", "trim_end")).unwrap())
+                .build()
+                .unwrap(),
+        ),
+    ]
+    .iter()
+    {
+        let source: Value = serde_json::from_str(input).unwrap();
+        group.throughput(Throughput::Bytes(input.len() as u64));
+        group.bench_function(*name, |b| {
+            b.iter(|| {
+                let _res = trans.apply(&source);
+            })
+        });
+    }
+    group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
