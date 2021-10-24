@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2021-10-23
+### Added
+- New `len`, `strip`, `sum` and `trim` Actions.
+- Actions reference to README.
+
+### Changed
+- Fixed README comments.
+- `Action` trait to return `Result<Option<Cow<'a, Value>>>` which allows passing of Value data by reference.
+- Benchmarks to use Criterion benchmark Groups.
+
 ## [0.4.0] - 2020-12-30
 ### Added
 - `Parser::add_action_parser` adding the ability to register `ActionParserFn` for custom `Actions`.
@@ -39,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Initial Release
 
-[Unreleased]: https://github.com/rust-playground/proteus/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/rust-playground/proteus/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/rust-playground/proteus/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/rust-playground/proteus/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/rust-playground/proteus/compare/da422a5dd82c9cca612c864a7d9905992bce8281...v0.3.0
 [0.2.0]: https://github.com/rust-playground/proteus/compare/e6563929efc6cefab9a7fc086a0b129f4690b94f...da422a5dd82c9cca612c864a7d9905992bce8281
