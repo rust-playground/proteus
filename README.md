@@ -21,7 +21,7 @@ additional options. If other parsing syntax is desired it can be used to build t
 is done internally.
 
 The transformation syntax is very similar to access JSON data in Javascript.
-To handle special characters such as ``(blank), `[`, `]`, `"` and `.` you can use the explicit
+To handle special characters such as `""`(blank), `[`, `]`, `"` and `.` you can use the explicit
 key syntax `["example[].blah"]` which would represent the key in the following JSON:
 ```json
 {
