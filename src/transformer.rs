@@ -61,12 +61,13 @@ impl Transformer {
         destination: &mut Value,
     ) -> Result<(), Error> {
         for a in self.actions.iter() {
-            a.apply(&source, destination)?;
+            a.apply(source, destination)?;
         }
         Ok(())
     }
 
     /// applies the transform actions, in order, on the source and returns a final Value.
+    #[inline]
     pub fn apply(&self, source: &Value) -> Result<Value, Error> {
         let mut value = Value::Null;
         self.apply_to_destination(source, &mut value)?;
@@ -76,13 +77,15 @@ impl Transformer {
     /// applies the transform actions, in order, on the source slice.
     ///
     /// The source string MUST be valid utf-8 JSON.
+    #[inline]
     pub fn apply_from_slice(&self, source: &[u8]) -> Result<Value, Error> {
-        self.apply(&serde_json::from_slice(&source)?)
+        self.apply(&serde_json::from_slice(source)?)
     }
 
     /// applies the transform actions, in order, on the source string.
     ///
     /// The source string MUST be valid JSON.
+    #[inline]
     pub fn apply_from_str<'a, S>(&self, source: S) -> Result<Value, Error>
     where
         S: Into<Cow<'a, str>>,
@@ -94,6 +97,7 @@ impl Transformer {
     /// represented by D.
     ///
     /// The source string MUST be valid JSON.
+    #[inline]
     pub fn apply_from_str_to<'a, S, D>(&self, source: S) -> Result<D, Error>
     where
         S: Into<Cow<'a, str>>,
@@ -105,6 +109,7 @@ impl Transformer {
 
     /// applies the transform actions, in order, on the serializable source and returns the type
     /// represented by D.
+    #[inline]
     pub fn apply_to<S, D>(&self, source: S) -> Result<D, Error>
     where
         S: Serialize,
@@ -425,6 +430,98 @@ mod tests {
         let trans = TransformBuilder::default().add_actions(actions).build()?;
         let res = serde_json::to_string(&trans)?;
         assert_eq!(res, "{\"actions\":[{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"name\"}}]}},{\"type\":\"Setter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Array\":{\"index\":0}}],\"child\":{\"type\":\"Getter\",\"namespace\":[{\"Object\":{\"id\":\"person\"}},{\"Object\":{\"id\":\"metadata\"}}]}}]}");
+        Ok(())
+    }
+
+    #[test]
+    fn test_set_and_get_top_level() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[Parsable::new("", "")])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+        let input = json!({
+            "existing_key":"my_val1",
+            "my_array":["idx_0_value"]
+        });
+        let expected = json!({"existing_key":"my_val1","my_array":["idx_0_value"]});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
+
+    #[test]
+    fn test_sum() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new(r#"sum(const(1.1), arr, len(obj))"#, "sum"),
+            Parsable::new("sum(len(arr))", "sum2"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({
+            "arr": [1, 2, 3],
+            "obj": {"key":"value"}
+        });
+        let expected = json!({"sum":8.1, "sum2": 3});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+
+        let actions = Parser::parse_multi(&[Parsable::new("sum()", "sum")])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!([1, 2, 3]);
+        let expected = json!({"sum":6});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_len() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new("len()", "len1"),
+            Parsable::new("len(arr)", "len2"),
+            Parsable::new("len(obj)", "len3"),
+            Parsable::new("len(obj.key)", "len4"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({
+            "arr": [1, 2, 3],
+            "obj": {"key":"value"}
+        });
+        let expected = json!({"len1": 2, "len2": 3, "len3": 1, "len4": 5});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
+
+    #[test]
+    fn test_trim() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new("trim(key)", "res1"),
+            Parsable::new("trim_start(key)", "res2"),
+            Parsable::new("trim_end(key)", "res3"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({"key": " value "});
+        let expected = json!({"res1": "value", "res2": "value ", "res3": " value"});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
+        Ok(())
+    }
+
+    #[test]
+    fn test_strip() -> Result<(), Box<dyn std::error::Error>> {
+        let actions = Parser::parse_multi(&[
+            Parsable::new(r#"strip_prefix("v", key)"#, "res1"),
+            Parsable::new(r#"strip_suffix("e", key)"#, "res2"),
+        ])?;
+        let trans = TransformBuilder::default().add_actions(actions).build()?;
+
+        let input = json!({"key": "value"});
+        let expected = json!({"res1": "alue", "res2": "valu"});
+        let output = trans.apply(&input)?;
+        assert_eq!(expected, output);
         Ok(())
     }
 }

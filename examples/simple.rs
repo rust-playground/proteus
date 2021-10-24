@@ -32,7 +32,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             ),
             ("nested.inner.key", "prev_nested"),
             ("nested.my_arr", "my_arr"),
-            (r#"const("arr_value_2")"#, "my_arr[]")
+            (r#"const("arr_value_2")"#, "my_arr[]"),
+            (r#"len(nested)"#, "z_amount_of_nested_data"),
+            (r#"sum(const(1.1), len(nested))"#, "zz_sum_nested")
         )?)
         .build()?;
     let res = trans.apply_from_str(input)?;

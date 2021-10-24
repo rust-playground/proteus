@@ -2,6 +2,8 @@ use crate::action::Action;
 use crate::errors::Error;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::borrow::Cow;
+use std::ops::Deref;
 
 /// This type represents an [Action](../action/trait.Action.html) which joins two or more Value's
 /// separated by the provided `sep` and returns a Value::String(String).
@@ -21,18 +23,22 @@ impl Join {
 
 #[typetag::serde]
 impl Action for Join {
-    fn apply(&self, source: &Value, destination: &mut Value) -> Result<Option<Value>, Error> {
+    fn apply<'a>(
+        &self,
+        source: &'a Value,
+        destination: &mut Value,
+    ) -> Result<Option<Cow<'a, Value>>, Error> {
         let l = self.values.len() - 1;
         let mut result = String::new();
         for (i, v) in self.values.iter().enumerate() {
             match v.apply(source, destination)? {
                 Some(v) => {
-                    match v {
+                    match v.deref() {
                         Value::String(s) => {
                             if s.is_empty() {
                                 continue;
                             }
-                            result.push_str(&s);
+                            result.push_str(s);
                         }
                         _ => {
                             let s = v.to_string();
@@ -53,6 +59,6 @@ impl Action for Join {
         if result.is_empty() {
             return Ok(None);
         }
-        Ok(Some(Value::String(result)))
+        Ok(Some(Cow::Owned(Value::String(result))))
     }
 }

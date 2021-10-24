@@ -9,6 +9,7 @@ use crate::actions::setter::Error as SetterError;
 use crate::errors::Error as CrateErr;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use std::borrow::Cow;
 
 /// This type represents an [Action](../action/trait.Action.html) which sets data to the
 /// destination JSON Value.
@@ -26,8 +27,13 @@ impl Setter {
 
 #[typetag::serde]
 impl Action for Setter {
-    fn apply(&self, source: &Value, destination: &mut Value) -> Result<Option<Value>, CrateErr> {
+    fn apply<'a>(
+        &self,
+        source: &'a Value,
+        destination: &mut Value,
+    ) -> Result<Option<Cow<'a, Value>>, CrateErr> {
         if let Some(field) = self.child.apply(source, destination)? {
+            let field = field.into_owned();
             let mut current = destination;
             for ns in &self.namespace {
                 match ns {
@@ -129,7 +135,7 @@ impl Action for Setter {
                                         return Ok(None);
                                     }
                                     for (i, v) in arr.into_iter().enumerate() {
-                                        existing[i] = v;
+                                        existing[i] = v.clone();
                                     }
                                     Ok(None)
                                 }
